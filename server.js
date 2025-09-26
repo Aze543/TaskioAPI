@@ -27,6 +27,14 @@ app.get("/tasks", (req, res) => {
   res.json(tasks); // [] if none
 });
 
+app.get("/users", (req, res) => {
+  const { user_id } = req.query;
+  const db = readDB();
+  let users = db.users;
+  if (user_id) users = tasks.filter((t) => t.user_id === user_id);
+  res.json(users); // [] if none
+});
+
 app.post("/tasks", (req, res) => {
   const db = readDB();
   const newTask = { id: Date.now(), ...req.body };
@@ -34,6 +42,7 @@ app.post("/tasks", (req, res) => {
   writeDB(db);
   res.status(201).json(newTask);
 });
+
 
 app.get("/users/:id", (req, res) => {
   const db = readDB();
@@ -49,6 +58,40 @@ app.post("/users", (req, res) => {
   writeDB(db);
   res.status(201).json(newUser);
 });
+
+// PATCH (update part of a task)
+app.patch("/tasks/:id", (req, res) => {
+  const db = readDB();
+  const taskId = req.params.id;
+
+  const taskIndex = db.tasks.findIndex((t) => t.id === taskId);
+  if (taskIndex === -1) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  // Update only the fields provided in req.body
+  db.tasks[taskIndex] = { ...db.tasks[taskIndex], ...req.body };
+
+  writeDB(db);
+  res.json(db.tasks[taskIndex]);
+});
+
+// DELETE (remove a task)
+app.delete("/tasks/:id", (req, res) => {
+  const db = readDB();
+  const taskId = req.params.id;
+
+  const taskIndex = db.tasks.findIndex((t) => t.id === taskId);
+  if (taskIndex === -1) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  const deletedTask = db.tasks.splice(taskIndex, 1)[0];
+
+  writeDB(db);
+  res.json(deletedTask);
+});
+
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
